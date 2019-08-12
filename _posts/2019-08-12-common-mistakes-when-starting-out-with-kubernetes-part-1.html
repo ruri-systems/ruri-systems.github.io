@@ -1,0 +1,129 @@
+---
+title: "Common Mistakes when starting out with Kubernetes, Part 1"
+date: 2019-08-12 00:00:00
+layout: post
+tags: mistakes kubernetes
+---
+<p>
+<i>Kubernetes. Containers. Orchestration.</i> It’s all the rage currently and it
+seems like you have to do it or be forgotten in the dust.  Then one tries and
+hits the wall trying to understand how to get going outside of few nice cloud
+providers (like GKE), find it hard to move beyond minikube, and generally find
+oneself with a lot of problems and little to no benefits expounded by
+Kubernetes fans (like me!).  This post is going to be first of a series where I
+am going to try and document common mistakes that might be not obvious to
+someone just starting out, to make your travels with Kubernetes into smooth
+sailing.  
+</p>
+
+
+<div id="outline-container-org6322521" class="outline-2">
+<h2 id="org6322521">Not enough resources</h2>
+<div class="outline-text-2" id="text-org6322521">
+<p>
+A common complaint I’ve encountered is with regards to how many resources K8s
+consumes even before you start your own applications, and how few small VMs
+weren’t capable of getting it running because kube-system eats 70% of a node.
+</p>
+
+<p>
+The reason behind it is that various system components of Kubernetes have
+empirically-derived resource requirements - for a reasonably big and active
+deployment. Minikube sets its own, much smaller requests on resources for
+internal services, and thus can reasonably work on much smaller system.
+</p>
+
+<p>
+<b>The answer is to use at least 2, preferably more, CPU per node.</b> You can
+modify the settings to be workable on lesser resources, but when starting out
+it’s not advisable.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-org630324b" class="outline-2">
+<h2 id="org630324b">Using few big machines instead of many smaller ones</h2>
+<div class="outline-text-2" id="text-org630324b">
+<p>
+<i>Didn't you just tell us to use a bigger machine?</i>  
+</p>
+
+<p>
+Why, yes, I did.
+</p>
+
+<p>
+There are two conflicting forces at play. Each individual node needs to be
+powerful enough to run cluster-supporting workloads, as well as reasonable
+amount of your own. However simply making few big nodes means that whenever a
+node fails, your available capacity drop much more - and that means that the
+knock-on effect on the rest of the cluster is much bigger. Even when you plan
+your capacity to account for this and use pod antiAffinities and multiple
+replicas, even if you run in cloud with autoscaler setting a new node to take
+over immediately - the bigger percentage a single node represents, the worse
+the chaos after failure.
+</p>
+
+<p>
+Sounds like simple, obvious thing, yet I have to admit I have done that in the past.
+</p>
+
+<p>
+A good rule of thumb is that you should try to have nodes sized so that
+losing one node doesn't take a significant portion of your capacity offline.
+Otherwise you're risking that possibly failing pods won't result in not
+enough capacity, as system loses <i>slack</i> necessary to start new resources in
+replacement of failing ones.
+</p>
+
+<p>
+Nature of kubernetes as a much more dynamic system than rigid approaches like
+pacemaker and manually allocated applications, while making it easier to use
+every last bit of capacity you have, also makes it a bit more chaotic (good
+time to get that <a href="https://en.wikipedia.org/wiki/Chaos_engineering">Chaos Engineering</a> practices in play!).
+</p>
+</div>
+</div>
+
+<div id="outline-container-orga141b4d" class="outline-2">
+<h2 id="orga141b4d">Requesting too many resources unknowingly</h2>
+<div class="outline-text-2" id="text-orga141b4d">
+<p>
+This is something that has bitten me in the past. You should always, always
+specify resource requests (CPU, memory) and limits. Otherwise you might find
+yourself in a situation where adding new deployment, despite unloaded
+cluster, fails due to&#x2026; missing capacity. This was caused by GKE having (at
+least in 2016!) a default <i>limitRange</i> set on <i>default</i> namespace that
+automatically set <code>request.cpu=100m</code>. 
+</p>
+
+<p>
+In my case the cause was historical, default CPU allocation on GKE. But the
+crucial part was <i>not knowing it was there</i>. If you have a resource
+reservation defined for the namespaces you use and you don't know about it,
+it's very easy to quickly find out that your deployments are locked due to
+"no capacity" errors.
+</p>
+
+<p>
+<b>Learn about resource limits, requests, and quotas, and remember to always apply them to your pods.</b>
+</p>
+
+<p>
+Any pod without explicit resource settings should be done by conscious
+decision, otherwise you might be woken by alerts at the most inopportune
+moment.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org6349be8" class="outline-2">
+<h2 id="org6349be8">To be continued&#x2026;</h2>
+<div class="outline-text-2" id="text-org6349be8">
+<p>
+As suggested by title, there's a second part to this article incoming, which
+will delve into some more basic pitfalls that await a new kubernetes user.
+</p>
+</div>
+</div>
