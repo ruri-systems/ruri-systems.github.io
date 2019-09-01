@@ -1,0 +1,213 @@
+---
+title: "Common Mistakes when starting out with Kubernetes, part 2"
+date: 2019-08-26 00:00:00
+layout: post
+tags: mistakes kubernetes
+---
+<p>
+Some more issues I have observed with regards to traps waiting for newcomers to Kubernetes.
+</p>
+
+<div id="outline-container-orge1000d3" class="outline-2">
+<h2 id="orge1000d3">Don't use `default` namespace. Just don't.</h2>
+<div class="outline-text-2" id="text-orge1000d3">
+<p>
+Using <code>default</code> namespace is easy. It just works and you have one issue less
+to care about, important especially when you are just starting out, isn't it?
+Unfortunately, it leads to horrible mess over time:
+</p>
+
+<pre class="example">
+~ λ kubectl get deployment,pods,svc,ing | wc -l
+274
+</pre>
+
+<p>
+This is a count of just the objects we care about in a certain cluster where
+we used default namespace for most of deployments. While we do manage (= -l
+app=name = is great option!) it's not easiest to see what is happening where,
+especially when you are dealing with an incident.
+</p>
+
+<p>
+<span class="underline">But how I am going to prevent deploying to different namesace by mistake?</span> If
+you haven't yet gone for generated manifests (which is something I also
+recommend), remember that you don't have to manually specify the namespace for
+each <code>kubectl apply</code> (and let's be honest - majority of us are still using
+<code>kubectl apply</code>.)
+</p>
+
+<p>
+The important thing is that you can include namespace in your object metadata.
+The following example is a bit old (you can recognize by API version), but
+taken from real life where I have separate "infra" namespace housing
+miscallaneous but important components for running rest of the system.
+Accidentally deploying it to different namespace because someone typed
+<code>kubectl apply -f</code> could have quite disastrous effects, and unless you have
+invested time into proper <span class="underline">Continuous Deployment</span> pipeline that cuts you out
+from manual change, it's always a risk.
+</p>
+
+<pre class="example">
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: my-deployment
+  namespace: infra
+spec:
+...
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org3ba5c82" class="outline-2">
+<h2 id="org3ba5c82">Lack of parametrization in deployments</h2>
+<div class="outline-text-2" id="text-org3ba5c82">
+<p>
+Probably one of the most annoying issues one can make for themselves is
+things hardcoded into container itself. Because it's a matter of <b>when</b>, not
+<b>if</b>, that you will have an urgent need to change something, or deploy more
+than one copy, and building a new container version will be either too slow,
+or slow you down enough to make you irritated.
+</p>
+
+<p>
+Parameterizing your containers allows you operational flexibility you'll end
+up loving, especially with ConfigMaps/Secrets mounted as environment variables.
+</p>
+
+
+<p>
+If you have software that <b>needs</b> configuration file and you don't have
+resources to change that at the moment, a pretty good solution is to use
+<code>envsubst</code> as part of your entrypoint script in <code>Dockerfile</code>.
+</p>
+
+<p>
+Parameterization is also core concept of <a href="https://12factor.net/">12-factor apps</a>, which are easier to
+operate in cloud native way, as they automatically pull necessary
+configuration from their environment. By parameterizing the whole container,
+often with a script as part of your Docker <i>entrypoint</i>, we can bring
+configuration from environment even to applications that don't support it
+natively.
+</p>
+
+<p>
+<code>envsubst</code> is part of gettext utilities (and thus reasonably small dependency
+on your containers) and allows shell-style replacement of variables in files.
+</p>
+
+<pre class="example">
+# As part of your entrypoint script:
+
+envsubst &lt; config.template &gt; config
+
+# Will replace shell variable references in ${VAR} style with variables
+# taken from environment
+</pre>
+
+<p>
+This can be utilized with <code>envFrom</code> in your pod specs this way:
+</p>
+
+<pre class="example">
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dev-config
+data:
+  ENV: development
+  DB: dev.db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+      env: dev
+  template:
+    metadata:
+      labels:
+        app: my-app
+        env: dev
+    spec:
+      containers:
+      - name: app
+        image: mycorp/my-app:0.0.1
+        envFrom:
+        - configMapRef:
+            name: dev-config 
+</pre>
+
+<p>
+Above deployment will automatically have <code>ENV</code> and <code>DB</code> environment
+variables set from <code>dev-config</code> <code>ConfigMap</code>. Since ConfigMaps are
+namespace-scoped, you can even use standard name and use namespaces to
+separate them - for example, "dev" namespace might have a configmap that
+sets defaults specific to dev environment, while the YAML files for
+deployment remain the same. 
+</p>
+
+<p>
+Generally the more parameterized your images are, the easier it is to handle
+changes in environment. Tools like <code>envsubst</code> allow you to follow ideas of
+<a href="https://12factor.net/">12-factor apps</a> without rewriting the code of your (or third-party)
+applications. And the less work you need to manually change something to get
+a configuration change applied? Always a win in my book.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org1ea1047" class="outline-2">
+<h2 id="org1ea1047">Helm with Tiller (yes, really)</h2>
+<div class="outline-text-2" id="text-org1ea1047">
+<p>
+This might be a tiny bit controversial, as it sounds like I'm advocating
+against the use of Helm. Unfortunately, Helm's Tiller makes it very easy to
+shoot yourself in the foot, and then spend hours looking for the smoking gun.
+</p>
+
+<p>
+The problem is that when you use Helm in the default way, with tiller, the
+manifests are applied by Tiller, not by your local <code>kubectl</code>. This can mean
+that errors in your manifests (especially <i>dreaded</i> space-based nesting in
+YAML) often won't be reported by <code>helm install</code> - instead you'll finally get
+a timeout error which doesn't tell you anything about the actual problem.
+</p>
+
+<p>
+Helm 3 is going to fix this, however in the meantime if you want to use Helm,
+I recommend using it in so-called "tiller-less" mode. It's not best solution,
+but especially when you're developing your own chart, will actually give you
+errors if your YAML templates are incorrect.
+</p>
+
+<pre class="example">
+# Download a helm Chart
+helm fetch \
+  --repo https://kubernetes-charts.storage.googleapis.com \
+  --untar \
+  --untardir ./charts \
+  --version 5.5.3 \
+    prometheus
+# Copy Chart's values.yaml file
+cp ./charts/prometheus/values.yaml \
+  ./values/prometheus.yaml
+# After editing values to your liking, generate manifests:
+
+helm template \
+  --values ./values/prometheus.yaml \
+  --output-dir ./manifests \
+    ./charts/prometheus
+
+# And apply them 
+kubectl apply --recursive --filename ./manifests/prometheus
+</pre>
+</div>
+</div>
