@@ -27,4 +27,4 @@ deployments.
 
 [My CV](https://drive.google.com/file/d/0B29CHUBtDZd5N1FJbF92RnBJdkk/view)
 
-If you're interested, drop me a line at [mailto:pawel.lasek+contract@gmail.com](pawel.lasek+contract@gmail.com).
+If you're interested, drop me a line at [pawel.lasek+contract@gmail.com](mailto:pawel.lasek+contract@gmail.com).
