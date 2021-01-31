@@ -1,23 +1,23 @@
 ---
 title: "Common Mistakes when starting out with Kubernetes, part 2"
-date: 2019-08-26 00:00:00
+date: 2021-01-31 21:44:00
 layout: post
-tags: mistakes kubernetes
+tags: kubernetes mistakes
 ---
 <p>
 Some more issues I have observed with regards to traps waiting for newcomers to Kubernetes.
 </p>
 
-<div id="outline-container-org117d2ba" class="outline-2">
-<h2 id="org117d2ba">Don't use `default` namespace. Just don't.</h2>
-<div class="outline-text-2" id="text-org117d2ba">
+<div id="outline-container-org71ddddf" class="outline-2">
+<h2 id="org71ddddf">Don't use `default` namespace. Just don't.</h2>
+<div class="outline-text-2" id="text-org71ddddf">
 <p>
 Using <code>default</code> namespace is easy. It just works and you have one issue less
 to care about, important especially when you are just starting out, isn't it?
 Unfortunately, it leads to horrible mess over time:
 </p>
 
-<pre class="example" id="org04b8d2e">
+<pre class="example" id="org065a561">
 ~ λ kubectl get deployment,pods,svc,ing | wc -l
 274
 </pre>
@@ -48,7 +48,7 @@ invested time into proper <span class="underline">Continuous Deployment</span> p
 from manual change, it's always a risk.
 </p>
 
-<pre class="example" id="org93610fc">
+<pre class="example" id="org3cb277c">
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -61,9 +61,9 @@ spec:
 </div>
 </div>
 
-<div id="outline-container-org7ca205e" class="outline-2">
-<h2 id="org7ca205e">Lack of parametrization in deployments</h2>
-<div class="outline-text-2" id="text-org7ca205e">
+<div id="outline-container-org825edc7" class="outline-2">
+<h2 id="org825edc7">Lack of parametrization in deployments</h2>
+<div class="outline-text-2" id="text-org825edc7">
 <p>
 Probably one of the most annoying issues one can make for themselves is
 things hardcoded into container itself. Because it's a matter of <b>when</b>, not
@@ -98,7 +98,7 @@ natively.
 on your containers) and allows shell-style replacement of variables in files.
 </p>
 
-<pre class="example" id="org15ae7c1">
+<pre class="example" id="org582aa55">
 # As part of your entrypoint script:
 
 envsubst &lt; config.template &gt; config
@@ -111,7 +111,7 @@ envsubst &lt; config.template &gt; config
 This can be utilized with <code>envFrom</code> in your pod specs this way:
 </p>
 
-<pre class="example" id="org8ec6e6c">
+<pre class="example" id="org73ccf96">
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -164,9 +164,9 @@ a configuration change applied? Always a win in my book.
 </div>
 </div>
 
-<div id="outline-container-orgb927f04" class="outline-2">
-<h2 id="orgb927f04">Helm with Tiller (yes, really)</h2>
-<div class="outline-text-2" id="text-orgb927f04">
+<div id="outline-container-orgd776e17" class="outline-2">
+<h2 id="orgd776e17">Helm with Tiller (yes, really)</h2>
+<div class="outline-text-2" id="text-orgd776e17">
 <p>
 This might be a tiny bit controversial, as it sounds like I'm advocating
 against the use of Helm. Unfortunately, Helm's Tiller makes it very easy to
@@ -188,7 +188,7 @@ but especially when you're developing your own chart, will actually give you
 errors if your YAML templates are incorrect.
 </p>
 
-<pre class="example" id="org0670265">
+<pre class="example" id="orgec57482">
 # Download a helm Chart
 helm fetch \
   --repo https://kubernetes-charts.storage.googleapis.com \

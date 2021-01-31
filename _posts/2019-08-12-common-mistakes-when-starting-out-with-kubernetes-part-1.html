@@ -2,7 +2,7 @@
 title: "Common Mistakes when starting out with Kubernetes, Part 1"
 date: 2019-08-12 00:00:00
 layout: post
-tags: mistakes kubernetes
+tags: kubernetes mistakes
 ---
 <p>
 <i>Kubernetes. Containers. Orchestration.</i> It’s all the rage currently and it
@@ -17,9 +17,9 @@ sailing.
 </p>
 
 
-<div id="outline-container-org8456b4f" class="outline-2">
-<h2 id="org8456b4f">Not enough resources</h2>
-<div class="outline-text-2" id="text-org8456b4f">
+<div id="outline-container-orgf979adb" class="outline-2">
+<h2 id="orgf979adb">Not enough resources</h2>
+<div class="outline-text-2" id="text-orgf979adb">
 <p>
 A common complaint I’ve encountered is with regards to how many resources K8s
 consumes even before you start your own applications, and how few small VMs
@@ -42,9 +42,9 @@ it’s not advisable.
 </div>
 
 
-<div id="outline-container-org2870a2a" class="outline-2">
-<h2 id="org2870a2a">Using few big machines instead of many smaller ones</h2>
-<div class="outline-text-2" id="text-org2870a2a">
+<div id="outline-container-orgad54cf5" class="outline-2">
+<h2 id="orgad54cf5">Using few big machines instead of many smaller ones</h2>
+<div class="outline-text-2" id="text-orgad54cf5">
 <p>
 <i>Didn't you just tell us to use a bigger machine?</i>  
 </p>
@@ -72,9 +72,14 @@ Sounds like simple, obvious thing, yet I have to admit I have done that in the p
 <p>
 A good rule of thumb is that you should try to have nodes sized so that
 losing one node doesn't take a significant portion of your capacity offline.
-Otherwise you're risking that possibly failing pods won't result in not
+Otherwise you're risking that possibly failing pods will result in not
 enough capacity, as system loses <i>slack</i> necessary to start new resources in
 replacement of failing ones.
+</p>
+
+<p>
+This is well covered by the approach of "N+Y" redundancy and capaity planning.
+When it's <code>N+1</code>, you have space for one node failure, with <code>N+2</code> for two, etc.
 </p>
 
 <p>
@@ -86,9 +91,9 @@ time to get that <a href="https://en.wikipedia.org/wiki/Chaos_engineering">Chaos
 </div>
 </div>
 
-<div id="outline-container-orge46ed76" class="outline-2">
-<h2 id="orge46ed76">Requesting too many resources unknowingly</h2>
-<div class="outline-text-2" id="text-orge46ed76">
+<div id="outline-container-org62aafc1" class="outline-2">
+<h2 id="org62aafc1">Requesting too many resources unknowingly</h2>
+<div class="outline-text-2" id="text-org62aafc1">
 <p>
 This is something that has bitten me in the past. You should always, always
 specify resource requests (CPU, memory) and limits. Otherwise you might find
@@ -118,9 +123,9 @@ moment.
 </div>
 </div>
 
-<div id="outline-container-org69f2947" class="outline-2">
-<h2 id="org69f2947">To be continued&#x2026;</h2>
-<div class="outline-text-2" id="text-org69f2947">
+<div id="outline-container-org5320244" class="outline-2">
+<h2 id="org5320244">To be continued&#x2026;</h2>
+<div class="outline-text-2" id="text-org5320244">
 <p>
 As suggested by title, there's a second part to this article incoming, which
 will delve into some more basic pitfalls that await a new kubernetes user.
